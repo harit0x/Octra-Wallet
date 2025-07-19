@@ -513,31 +513,6 @@ export async function fetchPendingTransactions(address: string): Promise<Pending
       return [];
     }
     
-    let data: any;
-    try {
-      const responseText = await response.text();
-      if (!responseText.trim()) {
-        console.error('Empty response from pending private transfers API');
-        return [];
-      }
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Failed to parse pending private transfers response as JSON:', parseError);
-      return [];
-    }
-    
-    const userTransactions = data.staged_transactions.filter(tx => 
-      tx.from.toLowerCase() === address.toLowerCase() || 
-      tx.to.toLowerCase() === address.toLowerCase()
-    );
-    
-    return userTransactions;
-  } catch (error) {
-    console.error('Error fetching pending transactions:', error);
-    return [];
-  }
-}
-
 // New function to fetch specific pending transaction by hash
 export async function fetchPendingTransactionByHash(hash: string): Promise<PendingTransaction | null> {
   try {
