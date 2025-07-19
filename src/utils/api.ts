@@ -513,6 +513,8 @@ export async function fetchPendingTransactions(address: string): Promise<Pending
       return [];
     }
     
+  }
+}
 // New function to fetch specific pending transaction by hash
 export async function fetchPendingTransactionByHash(hash: string): Promise<PendingTransaction | null> {
   try {
