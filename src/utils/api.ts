@@ -62,10 +62,22 @@ export async function fetchBalance(address: string): Promise<BalanceResponse> {
     if (!balanceResponse.ok) {
       const errorText = await balanceResponse.text();
       console.error('Failed to fetch balance:', balanceResponse.status, errorText);
-      throw new Error(`Error ${balanceResponse.status}`);
+      // Return zero balance when RPC fails
+      return { balance: 0, nonce: 0 };
     }
     
-    const data: any = await balanceResponse.json();
+    let data: any;
+    try {
+      const responseText = await balanceResponse.text();
+      if (!responseText.trim()) {
+        console.error('Empty response from balance API');
+        return { balance: 0, nonce: 0 };
+      }
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse balance response as JSON:', parseError);
+      return { balance: 0, nonce: 0 };
+    }
 
     const balance = typeof data.balance === 'string' ? parseFloat(data.balance) : (data.balance || 0);
     
@@ -99,7 +111,8 @@ export async function fetchBalance(address: string): Promise<BalanceResponse> {
     return { balance, nonce };
   } catch (error) {
     console.error('Error fetching balance:', error);
-    throw error;
+    // Return zero balance when any error occurs
+    return { balance: 0, nonce: 0 };
   }
 }
 
@@ -112,10 +125,41 @@ export async function fetchEncryptedBalance(address: string, privateKey: string)
     });
     
     if (!response.ok) {
-      return null;
+      console.error('Failed to fetch pending private transfers:', response.status);
+      console.error('Failed to fetch encrypted balance:', response.status);
+      return {
+        public: 0,
+        public_raw: 0,
+        encrypted: 0,
+        encrypted_raw: 0,
+        total: 0
+      };
     }
     
-    const data = await response.json();
+    let data: any;
+    try {
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        console.error('Empty response from encrypted balance API');
+        return {
+          public: 0,
+          public_raw: 0,
+          encrypted: 0,
+          encrypted_raw: 0,
+          total: 0
+        };
+      }
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse encrypted balance response as JSON:', parseError);
+      return {
+        public: 0,
+        public_raw: 0,
+        encrypted: 0,
+        encrypted_raw: 0,
+        total: 0
+      };
+    }
     
     return {
       public: parseFloat(data.public_balance?.split(' ')[0] || '0'),
@@ -126,7 +170,13 @@ export async function fetchEncryptedBalance(address: string, privateKey: string)
     };
   } catch (error) {
     console.error('Error fetching encrypted balance:', error);
-    return null;
+    return {
+      public: 0,
+      public_raw: 0,
+      encrypted: 0,
+      encrypted_raw: 0,
+      total: 0
+    };
   }
 }
 
@@ -463,7 +513,19 @@ export async function fetchPendingTransactions(address: string): Promise<Pending
       return [];
     }
     
-    // Filter transactions for the specific address
+    let data: any;
+    try {
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        console.error('Empty response from pending private transfers API');
+        return [];
+      }
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse pending private transfers response as JSON:', parseError);
+      return [];
+    }
+    
     const userTransactions = data.staged_transactions.filter(tx => 
       tx.from.toLowerCase() === address.toLowerCase() || 
       tx.to.toLowerCase() === address.toLowerCase()
